@@ -36,8 +36,8 @@ Timers are not implemented (Home Assistant automations do that job better).
 
 An ESP8266/ESP32 board with an IR LED (via a transistor if you want range) and, to follow the remote, an IR
 receiver module such as a VS1838B. The reference build is an **ESP-01M** (ESP8285, 1 MB): LED on GPIO4, receiver
-on GPIO14. The firmware fits with room to spare, but a 1 MB chip needs room for two copies for OTA updates, so
-keep the logger at `INFO`.
+on GPIO14. The firmware is about 470 KB and OTA updates need that much free again, so on a 1 MB chip keep the logger
+at `INFO`.
 
 ## Use
 
