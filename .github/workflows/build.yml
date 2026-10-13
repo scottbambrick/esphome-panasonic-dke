@@ -1,0 +1,41 @@
+name: Build
+
+# Runs the codec tests on the runner, then compiles example.yaml against this commit's
+# component (not the published one), so a change that breaks either is caught before anyone pulls it.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  codec-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: g++ -std=c++17 -Wall -Wextra -I components/panasonic_dke tests/codec_test.cpp -o codec_test
+      - run: ./codec_test
+
+  compile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install ESPHome
+        run: pip install "esphome==2026.9.1"
+      - name: Point the example at this checkout and add dummy secrets
+        run: |
+          sed 's#- source: github://scottbambrick/esphome-panasonic-dke#- source: { type: local, path: components }#' \
+            example.yaml > ci.yaml
+          grep -q "type: local" ci.yaml
+          printf 'api_key: "%s"\nwifi_ssid: "ci"\nwifi_password: "ci-password"\n' \
+            "$(openssl rand -base64 32)" > secrets.yaml
+      - name: Validate
+        run: esphome config ci.yaml > validated.txt || { cat validated.txt; exit 1; }
+      - name: Compile
+        run: esphome compile ci.yaml
