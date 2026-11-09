@@ -57,8 +57,8 @@ class PanasonicDKEClimate final : public climate_ir::ClimateIR {
   uint8_t last_fixed_v_{1};  // where the louvre goes when swing is turned off
   uint8_t last_fixed_h_{HS_CENTRE};
   uint8_t last_mode_{MODE_AUTO};  // mode to send while the climate is "off"
-  uint8_t air_{2};    // 0 off, 1 e-ion, 2 Patrol (Patrol is on after power-on)
-  uint8_t boost_{0};  // 0 off, 1 Powerful, 2 Quiet
+  uint8_t air_{2};                // 0 off, 1 e-ion, 2 Patrol (Patrol is on after power-on)
+  uint8_t boost_{0};              // 0 off, 1 Powerful, 2 Quiet
   uint32_t last_tx_ms_{0};
   bool sent_once_{false};
 };

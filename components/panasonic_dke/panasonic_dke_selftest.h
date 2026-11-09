@@ -9,7 +9,7 @@
 namespace esphome::panasonic_dke {
 
 struct SelfTestResult {
-  int checks{0}, failed{0};  // fixed vectors, command round trips
+  int checks{0}, failed{0};         // fixed vectors, command round trips
   int combos{0}, combos_failed{0};  // state -> pulses -> state round trips
 };
 
@@ -19,10 +19,12 @@ inline bool parse_hex(const char *s, uint8_t *out, size_t *n) {
   *n = 0;
   while (*s) {
     unsigned v;
-    if (sscanf(s, "%2x", &v) != 1) return false;
+    if (sscanf(s, "%2x", &v) != 1)
+      return false;
     out[(*n)++] = (uint8_t) v;
     s += 2;
-    if (*s == ' ') s++;
+    if (*s == ' ')
+      s++;
   }
   return true;
 }
@@ -32,7 +34,8 @@ inline std::vector<int32_t> pulses(const uint8_t *bytes, size_t len) {
   t.reserve(len * 16 + 40);
   build_burst(bytes, len, [&t](int mark, int space) {
     t.push_back(mark);
-    if (space) t.push_back(-space);
+    if (space)
+      t.push_back(-space);
   });
   return t;
 }
@@ -77,7 +80,8 @@ template<typename Fail> SelfTestResult run_self_test(Fail fail) {
   }
   for (auto h : GOOD_CMD)
     check(parse_hex(h, b, &n) && decode_frame(b, n, d) && d.kind == KIND_COMMAND, "command", h);
-  for (auto h : BAD) check(parse_hex(h, b, &n) && !decode_frame(b, n, d), "accepted a bad frame", h);
+  for (auto h : BAD)
+    check(parse_hex(h, b, &n) && !decode_frame(b, n, d), "accepted a bad frame", h);
 
   // Every mode / fan / louvre combination through encode -> pulses -> decode_burst, then again
   // with the first mark dropped, as the real receiver often does.
@@ -101,7 +105,8 @@ template<typename Fail> SelfTestResult run_self_test(Fail fail) {
                     x.state.vswing == s.vswing && x.state.hswing == s.hswing;
           ok = ok && decode_burst(t.data() + 1, t.size() - 1, x) && x.kind == KIND_STATE && x.state.temp == s.temp;
           r.combos++;
-          if (!ok) r.combos_failed++;
+          if (!ok)
+            r.combos_failed++;
         }
   for (int c = 0; c < CMD_COUNT; c++) {
     uint8_t bytes[COMMAND_LEN];

@@ -18,7 +18,8 @@ static const char *const FAN_NAMES[5] = {"1", "2", "3", "4", "5"};
 
 static uint8_t hs_to_index(uint8_t hs) {
   for (uint8_t i = 0; i < 6; i++)
-    if (HS_BY_INDEX[i] == hs) return i;
+    if (HS_BY_INDEX[i] == hs)
+      return i;
   return 3;
 }
 
@@ -34,11 +35,13 @@ PanasonicDKEClimate::PanasonicDKEClimate()
 
 void PanasonicDKEClimate::setup() {
   climate_ir::ClimateIR::setup();
-  if (!this->has_custom_fan_mode() && !this->fan_mode.has_value()) this->fan_mode = climate::CLIMATE_FAN_AUTO;
+  if (!this->has_custom_fan_mode() && !this->fan_mode.has_value())
+    this->fan_mode = climate::CLIMATE_FAN_AUTO;
   this->publish_extras_();
 #ifdef PANASONIC_DKE_SELF_TEST
   this->set_timeout(20000, [this]() {  // after the log connection is up
-    auto r = run_self_test([](const char *what, const char *detail) { ESP_LOGE(TAG, "self-test FAIL %s %s", what, detail); });
+    auto r = run_self_test(
+        [](const char *what, const char *detail) { ESP_LOGE(TAG, "self-test FAIL %s %s", what, detail); });
     ESP_LOGW(TAG, "SELF-TEST: %d checks, %d failed; %d state round-trips, %d failed", r.checks, r.failed, r.combos,
              r.combos_failed);
   });
@@ -54,12 +57,14 @@ void PanasonicDKEClimate::dump_config() {
 
 void PanasonicDKEClimate::set_vswing_(uint8_t v) {
   this->vswing_ = v;
-  if (v != VS_AUTO) this->last_fixed_v_ = v;
+  if (v != VS_AUTO)
+    this->last_fixed_v_ = v;
 }
 
 void PanasonicDKEClimate::set_hswing_(uint8_t h) {
   this->hswing_ = h;
-  if (h != HS_AUTO) this->last_fixed_h_ = h;
+  if (h != HS_AUTO)
+    this->last_fixed_h_ = h;
 }
 
 void PanasonicDKEClimate::apply_swing_(climate::ClimateSwingMode mode) {
@@ -80,9 +85,12 @@ void PanasonicDKEClimate::publish_extras_() {
   } else {
     this->set_custom_preset_(BOOST_NAMES[this->boost_ - 1]);
   }
-  if (this->vertical_select_ != nullptr) this->vertical_select_->publish_state(v ? 0 : this->vswing_);
-  if (this->horizontal_select_ != nullptr) this->horizontal_select_->publish_state(hs_to_index(this->hswing_));
-  if (this->air_select_ != nullptr) this->air_select_->publish_state(this->air_);
+  if (this->vertical_select_ != nullptr)
+    this->vertical_select_->publish_state(v ? 0 : this->vswing_);
+  if (this->horizontal_select_ != nullptr)
+    this->horizontal_select_->publish_state(hs_to_index(this->hswing_));
+  if (this->air_select_ != nullptr)
+    this->air_select_->publish_state(this->air_);
 }
 
 // ---- transmit -------------------------------------------------------------
@@ -94,7 +102,8 @@ void PanasonicDKEClimate::send_bytes_(const uint8_t *bytes, size_t len) {
   data->reserve(len * 16 + 40);
   build_burst(bytes, len, [data](int mark, int space) {
     data->mark(mark);
-    if (space) data->space(space);
+    if (space)
+      data->space(space);
   });
   call.perform();
   this->last_tx_ms_ = millis();
@@ -105,17 +114,29 @@ void PanasonicDKEClimate::transmit_state() {
   State s;
   s.power = this->mode != climate::CLIMATE_MODE_OFF;
   switch (this->mode) {
-    case climate::CLIMATE_MODE_COOL: s.mode = MODE_COOL; break;
-    case climate::CLIMATE_MODE_HEAT: s.mode = MODE_HEAT; break;
-    case climate::CLIMATE_MODE_DRY: s.mode = MODE_DRY; break;
-    case climate::CLIMATE_MODE_OFF: s.mode = this->last_mode_; break;
-    default: s.mode = MODE_AUTO; break;
+    case climate::CLIMATE_MODE_COOL:
+      s.mode = MODE_COOL;
+      break;
+    case climate::CLIMATE_MODE_HEAT:
+      s.mode = MODE_HEAT;
+      break;
+    case climate::CLIMATE_MODE_DRY:
+      s.mode = MODE_DRY;
+      break;
+    case climate::CLIMATE_MODE_OFF:
+      s.mode = this->last_mode_;
+      break;
+    default:
+      s.mode = MODE_AUTO;
+      break;
   }
-  if (s.power) this->last_mode_ = s.mode;
+  if (s.power)
+    this->last_mode_ = s.mode;
   s.temp = (uint8_t) clamp(lroundf(this->target_temperature), 16L, 30L);
   if (this->has_custom_fan_mode()) {
     char c = this->get_custom_fan_mode().c_str()[0];
-    if (c >= '1' && c <= '5') s.fan = c - '0';
+    if (c >= '1' && c <= '5')
+      s.fan = c - '0';
   }
   s.vswing = this->vswing_;
   s.hswing = this->hswing_;
@@ -135,7 +156,8 @@ void PanasonicDKEClimate::set_exclusive_(uint8_t *current, uint8_t target, Comma
     ESP_LOGW(TAG, "AC is off - it resets this setting on power-on, not changing it");
     return;
   }
-  if (target == *current) return;
+  if (target == *current)
+    return;
   // Pressing the active button turns it off; pressing the other one switches over.
   bool press_first = target == 0 ? *current == 1 : target == 1;
   this->send_command_(press_first ? first : second);
@@ -145,8 +167,10 @@ void PanasonicDKEClimate::set_exclusive_(uint8_t *current, uint8_t target, Comma
 void PanasonicDKEClimate::control(const climate::ClimateCall &call) {
   bool was_on = this->mode != climate::CLIMATE_MODE_OFF;
   bool send = false;  // anything the state frame carries changed
-  if (call.get_mode().has_value()) this->mode = *call.get_mode(), send = true;
-  if (call.get_target_temperature().has_value()) this->target_temperature = *call.get_target_temperature(), send = true;
+  if (call.get_mode().has_value())
+    this->mode = *call.get_mode(), send = true;
+  if (call.get_target_temperature().has_value())
+    this->target_temperature = *call.get_target_temperature(), send = true;
   if (call.has_custom_fan_mode()) {
     this->set_custom_fan_mode_(call.get_custom_fan_mode());
     send = true;
@@ -154,12 +178,14 @@ void PanasonicDKEClimate::control(const climate::ClimateCall &call) {
     this->set_fan_mode_(*call.get_fan_mode());
     send = true;
   }
-  if (call.get_swing_mode().has_value()) this->apply_swing_(*call.get_swing_mode()), send = true;
+  if (call.get_swing_mode().has_value())
+    this->apply_swing_(*call.get_swing_mode()), send = true;
   if (!was_on && this->mode != climate::CLIMATE_MODE_OFF) {  // the AC resets its toggles on power-on; Patrol comes on
     this->air_ = 2;
     this->boost_ = 0;
   }
-  if (send) this->transmit_state();
+  if (send)
+    this->transmit_state();
   if (call.has_custom_preset() || call.get_preset().has_value()) {
     uint8_t target = call.has_custom_preset() ? (call.get_custom_preset().c_str()[0] == 'P' ? 1 : 2) : 0;
     this->set_exclusive_(&this->boost_, target, CMD_POWERFUL, CMD_QUIET);
@@ -185,36 +211,59 @@ void PanasonicDKEClimate::on_select(PanasonicDKESelect *select, size_t index) {
 // ---- receive (the original remote) ---------------------------------------------
 
 void PanasonicDKEClimate::apply_toggle_(Command command) {
-  if (this->mode == climate::CLIMATE_MODE_OFF) return;  // the AC ignores these while off
+  if (this->mode == climate::CLIMATE_MODE_OFF)
+    return;  // the AC ignores these while off
   switch (command) {
-    case CMD_EION: this->air_ = this->air_ == 1 ? 0 : 1; break;
-    case CMD_PATROL: this->air_ = this->air_ == 2 ? 0 : 2; break;
-    case CMD_POWERFUL: this->boost_ = this->boost_ == 1 ? 0 : 1; break;
-    case CMD_QUIET: this->boost_ = this->boost_ == 2 ? 0 : 2; break;
-    default: break;
+    case CMD_EION:
+      this->air_ = this->air_ == 1 ? 0 : 1;
+      break;
+    case CMD_PATROL:
+      this->air_ = this->air_ == 2 ? 0 : 2;
+      break;
+    case CMD_POWERFUL:
+      this->boost_ = this->boost_ == 1 ? 0 : 1;
+      break;
+    case CMD_QUIET:
+      this->boost_ = this->boost_ == 2 ? 0 : 2;
+      break;
+    default:
+      break;
   }
 }
 
 bool PanasonicDKEClimate::on_receive(remote_base::RemoteReceiveData data) {
-  if (this->sent_once_ && millis() - this->last_tx_ms_ < SELF_ECHO_MS) return false;
+  if (this->sent_once_ && millis() - this->last_tx_ms_ < SELF_ECHO_MS)
+    return false;
   const auto &raw = data.get_raw_data();
   Decoded d;
-  if (!decode_burst(raw.data(), raw.size(), d)) return false;
+  if (!decode_burst(raw.data(), raw.size(), d))
+    return false;
 
   if (d.kind == KIND_COMMAND) {
     ESP_LOGD(TAG, "Remote: toggle %u", (unsigned) d.command);
     this->apply_toggle_(d.command);
   } else {
     const State &s = d.state;
-    if (s.mode == MODE_FAN) return false;  // this AC has no fan-only mode
+    if (s.mode == MODE_FAN)
+      return false;  // this AC has no fan-only mode
     bool was_on = this->mode != climate::CLIMATE_MODE_OFF;
     this->last_mode_ = s.mode;
     switch (s.power ? s.mode : 0xFF) {
-      case MODE_COOL: this->mode = climate::CLIMATE_MODE_COOL; break;
-      case MODE_HEAT: this->mode = climate::CLIMATE_MODE_HEAT; break;
-      case MODE_DRY: this->mode = climate::CLIMATE_MODE_DRY; break;
-      case 0xFF: this->mode = climate::CLIMATE_MODE_OFF; break;
-      default: this->mode = climate::CLIMATE_MODE_HEAT_COOL; break;
+      case MODE_COOL:
+        this->mode = climate::CLIMATE_MODE_COOL;
+        break;
+      case MODE_HEAT:
+        this->mode = climate::CLIMATE_MODE_HEAT;
+        break;
+      case MODE_DRY:
+        this->mode = climate::CLIMATE_MODE_DRY;
+        break;
+      case 0xFF:
+        this->mode = climate::CLIMATE_MODE_OFF;
+        break;
+      default:
+        this->mode = climate::CLIMATE_MODE_HEAT_COOL;
+        break;
     }
     this->target_temperature = s.temp;
     if (s.fan == 0)

@@ -2,9 +2,8 @@
 # 5 fan speeds + auto, swing, Powerful/Quiet (presets), louvre positions and e-ion/
 # Patrol (selects). It also decodes the original remote so HA follows it.
 import esphome.codegen as cg
-import esphome.config_validation as cv
 from esphome.components import climate_ir, select
-from esphome.const import CONF_ENTITY_CATEGORY
+import esphome.config_validation as cv
 
 AUTO_LOAD = ["climate_ir", "select"]
 CODEOWNERS = []
@@ -22,16 +21,13 @@ VERTICAL_OPTIONS = ["Auto", "1 (top)", "2", "3", "4", "5 (bottom)"]
 HORIZONTAL_OPTIONS = ["Auto", "Left", "Centre-left", "Centre", "Centre-right", "Right"]
 AIR_OPTIONS = ["Off", "e-ion", "Patrol"]
 
-CONFIG_SCHEMA = (
-    climate_ir.climate_ir_with_receiver_schema(PanasonicDKEClimate)
-    .extend(
-        {
-            cv.Optional(CONF_VERTICAL_SWING): select.select_schema(PanasonicDKESelect),
-            cv.Optional(CONF_HORIZONTAL_SWING): select.select_schema(PanasonicDKESelect),
-            cv.Optional(CONF_AIR_PURIFIER): select.select_schema(PanasonicDKESelect),
-            cv.Optional(CONF_SELF_TEST, default=False): cv.boolean,
-        }
-    )
+CONFIG_SCHEMA = climate_ir.climate_ir_with_receiver_schema(PanasonicDKEClimate).extend(
+    {
+        cv.Optional(CONF_VERTICAL_SWING): select.select_schema(PanasonicDKESelect),
+        cv.Optional(CONF_HORIZONTAL_SWING): select.select_schema(PanasonicDKESelect),
+        cv.Optional(CONF_AIR_PURIFIER): select.select_schema(PanasonicDKESelect),
+        cv.Optional(CONF_SELF_TEST, default=False): cv.boolean,
+    }
 )
 
 

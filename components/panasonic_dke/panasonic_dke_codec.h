@@ -34,18 +34,20 @@ inline constexpr uint8_t HEADER[HEADER_LEN] = {0x02, 0x20, 0xE0, 0x04, 0x00, 0x0
 
 inline uint8_t checksum(const uint8_t *b, size_t n) {
   uint8_t s = 0;
-  for (size_t i = 0; i < n; i++) s += b[i];
+  for (size_t i = 0; i < n; i++)
+    s += b[i];
   return s;
 }
 
 inline void encode_state(const State &s, uint8_t out[STATE_LEN]) {
   static const uint8_t T[STATE_LEN] = {0x02, 0x20, 0xE0, 0x04, 0x00, 0x00, 0x00, 0x80, 0x00, 0x00,
                                        0x00, 0x0E, 0xE0, 0x00, 0x00, 0x81, 0x00, 0x00, 0x00};
-  for (size_t i = 0; i < STATE_LEN; i++) out[i] = T[i];
+  for (size_t i = 0; i < STATE_LEN; i++)
+    out[i] = T[i];
   out[4] = 0x00;
-  out[5] = (uint8_t)(s.mode | 0x08 | (s.power ? 0x01 : 0x00));  // 0x08 = timers cancelled (always set by the remote)
-  out[6] = (uint8_t)(s.temp * 2);
-  out[8] = (uint8_t)((s.fan == 0 ? 0xA0 : 0x20 + 0x10 * s.fan) | (s.vswing & 0x0F));
+  out[5] = (uint8_t) (s.mode | 0x08 | (s.power ? 0x01 : 0x00));  // 0x08 = timers cancelled (always set by the remote)
+  out[6] = (uint8_t) (s.temp * 2);
+  out[8] = (uint8_t) ((s.fan == 0 ? 0xA0 : 0x20 + 0x10 * s.fan) | (s.vswing & 0x0F));
   out[9] = s.hswing;
   out[STATE_LEN - 1] = checksum(out, STATE_LEN - 1);
 }
@@ -53,7 +55,8 @@ inline void encode_state(const State &s, uint8_t out[STATE_LEN]) {
 inline void encode_command(Command c, uint8_t out[COMMAND_LEN]) {
   static const uint8_t CODES[CMD_COUNT][2] = {{0x86, 0x35}, {0x81, 0x33}, {0x61, 0x33}, {0x63, 0x33}};
   static const uint8_t T[4] = {0x02, 0x20, 0xE0, 0x04};
-  for (int i = 0; i < 4; i++) out[i] = T[i];
+  for (int i = 0; i < 4; i++)
+    out[i] = T[i];
   out[4] = 0x80;
   out[5] = CODES[c][0];
   out[6] = CODES[c][1];
@@ -70,8 +73,10 @@ struct Decoded {
 // Decode the second frame of a burst (8 or 19 bytes). Rejects bad checksums
 // and anything outside the values the remote is known to send.
 inline bool decode_frame(const uint8_t *b, size_t n, Decoded &out) {
-  if (n < 8 || b[0] != 0x02 || b[1] != 0x20 || b[2] != 0xE0 || b[3] != 0x04) return false;
-  if (checksum(b, n - 1) != b[n - 1]) return false;
+  if (n < 8 || b[0] != 0x02 || b[1] != 0x20 || b[2] != 0xE0 || b[3] != 0x04)
+    return false;
+  if (checksum(b, n - 1) != b[n - 1])
+    return false;
   if (n == COMMAND_LEN && b[4] == 0x80) {
     for (int c = 0; c < CMD_COUNT; c++) {
       uint8_t ref[COMMAND_LEN];
@@ -89,10 +94,14 @@ inline bool decode_frame(const uint8_t *b, size_t n, Decoded &out) {
     uint8_t temp = b[6] / 2;
     if (mode != MODE_AUTO && mode != MODE_DRY && mode != MODE_COOL && mode != MODE_HEAT && mode != MODE_FAN)
       return false;
-    if (b[6] & 1 || temp < 16 || temp > 30) return false;
-    if (fan != 0xA0 && !(fan >= 0x30 && fan <= 0x70)) return false;
-    if (vs != VS_AUTO && (vs < 1 || vs > 5)) return false;
-    if (hs != HS_CENTRE && hs != HS_AUTO && !(hs >= HS_LEFT && hs <= HS_RIGHT)) return false;
+    if (b[6] & 1 || temp < 16 || temp > 30)
+      return false;
+    if (fan != 0xA0 && !(fan >= 0x30 && fan <= 0x70))
+      return false;
+    if (vs != VS_AUTO && (vs < 1 || vs > 5))
+      return false;
+    if (hs != HS_CENTRE && hs != HS_AUTO && !(hs >= HS_LEFT && hs <= HS_RIGHT))
+      return false;
     out.kind = KIND_STATE;
     out.state.power = b[5] & 0x01;
     out.state.mode = mode;
@@ -108,7 +117,7 @@ inline bool decode_frame(const uint8_t *b, size_t n, Decoded &out) {
 // ---- timings <-> bytes -------------------------------------------------
 // Raw timings use the ESPHome convention: positive = mark, negative = space (microseconds).
 inline constexpr int HDR_MARK = 3500, HDR_SPACE = 1750, BIT_MARK = 440, ZERO_SPACE = 430, ONE_SPACE = 1300,
-                 FRAME_GAP = 10000;
+                     FRAME_GAP = 10000;
 
 // Parse a received burst: frame 0 must be the fixed header, frame 1 is decoded.
 // Tolerates the receiver dropping the very first mark and the final space.
@@ -132,7 +141,8 @@ inline bool decode_burst(const int32_t *raw, size_t n, Decoded &out) {
       i++;
       continue;
     }
-    if (i + 1 >= n) break;  // trailing stop mark
+    if (i + 1 >= n)
+      break;  // trailing stop mark
     int32_t sp = -raw[i + 1];
     if (sp > 5000) {  // last mark of a frame, then the gap
       f++;
@@ -140,19 +150,27 @@ inline bool decode_burst(const int32_t *raw, size_t n, Decoded &out) {
       i += 2;
       continue;
     }
-    if (v < 250 || v > 700 || sp < 250) return false;
+    if (v < 250 || v > 700 || sp < 250)
+      return false;
     size_t bit = nbits[f];
-    if (bit / 8 > MAX_FRAME_LEN) return false;
-    if (bit % 8 == 0) cur = 0;
-    if (sp > 800) cur |= (uint8_t)(1 << (bit & 7));
+    if (bit / 8 > MAX_FRAME_LEN)
+      return false;
+    if (bit % 8 == 0)
+      cur = 0;
+    if (sp > 800)
+      cur |= (uint8_t) (1 << (bit & 7));
     nbits[f] = ++bit;
-    if (bit % 8 == 0) frames[f][bit / 8 - 1] = cur;
+    if (bit % 8 == 0)
+      frames[f][bit / 8 - 1] = cur;
     i += 2;
   }
-  if (f < 1 || nbits[0] != HEADER_LEN * 8) return false;
+  if (f < 1 || nbits[0] != HEADER_LEN * 8)
+    return false;
   for (size_t k = 0; k < HEADER_LEN; k++)
-    if (frames[0][k] != HEADER[k]) return false;
-  if (nbits[1] % 8 != 0) return false;
+    if (frames[0][k] != HEADER[k])
+      return false;
+  if (nbits[1] % 8 != 0)
+    return false;
   return decode_frame(frames[1], nbits[1] / 8, out);
 }
 
@@ -161,7 +179,8 @@ template<typename F> inline void build_burst(const uint8_t *b, size_t n, F emit)
   auto frame = [&](const uint8_t *d, size_t len, bool last) {
     emit(HDR_MARK, HDR_SPACE);
     for (size_t i = 0; i < len; i++)
-      for (int j = 0; j < 8; j++) emit(BIT_MARK, (d[i] >> j) & 1 ? ONE_SPACE : ZERO_SPACE);
+      for (int j = 0; j < 8; j++)
+        emit(BIT_MARK, (d[i] >> j) & 1 ? ONE_SPACE : ZERO_SPACE);
     emit(BIT_MARK, last ? 0 : FRAME_GAP);
   };
   frame(HEADER, HEADER_LEN, false);
